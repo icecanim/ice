@@ -1,0 +1,11 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Panel</title>
+<style>body{margin:0;background:#05080f;color:#e6f1fb;font:15px system-ui,sans-serif;display:grid;place-items:start center;min-height:100vh;padding:40px 16px}
+.w{width:min(760px,100%);background:#0b121e;border:1px solid #17243a;border-radius:18px;padding:28px}h2{margin:0 0 6px}p{color:#7f93ad;margin:0 0 18px}
+input,select,button{font:inherit;background:#060a12;color:#e6f1fb;border:1px solid #17243a;border-radius:10px;padding:10px 12px}input[type=text],input[type=password]{width:100%;box-sizing:border-box}
+button{cursor:pointer;background:#38bdf8;color:#02121f;font-weight:700;border:0}button.g{background:#17243a;color:#e6f1fb}button.d{background:#3b1219;color:#f87171}
+.r{display:grid;grid-template-columns:auto 110px 1fr auto;gap:8px;align-items:center;margin-bottom:10px;background:#080d17;padding:10px;border-radius:12px}.r .e{grid-column:2/4;display:flex;gap:8px;align-items:center;color:#7f93ad;font-size:13px}
+.bar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}#m{margin-top:12px;min-height:20px}[hidden]{display:none!important}</style></head><body>
+<div class="w"><div id="lg"><h2>Admin</h2><p>Enter password to continue.</p><input id="pw" type="password" autocomplete="current-password"><div class="bar"><button id="go">Login</button></div></div>
+<div id="ed" hidden><h2>Announcements</h2><p>Active ones scroll in a bar at the top of the site. No active items = no bar.</p><div id="ls"></div>
+<div class="bar"><button class="g" id="add">+ Add</button><button id="sv">Save</button><button class="g" id="lo">Logout</button></div></div><div id="m"></div></div>
+<script src="panel.js"></script></body></html>

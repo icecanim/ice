@@ -1,0 +1,21 @@
+const $=s=>document.querySelector(s);let tok=sessionStorage.getItem('t'),items=[];
+const msg=(t,bad)=>{const m=$('#m');m.textContent=t;m.style.color=bad?'#f87171':'#4ade80'};
+const show=()=>{$('#lg').hidden=!!tok;$('#ed').hidden=!tok};
+async function api(o){const r=await fetch('/.netlify/functions/adm',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+(tok||'')},body:JSON.stringify(o)});
+ const j=await r.json().catch(()=>({}));if(r.status===401&&o.a!=='login'){sessionStorage.removeItem('t');tok=null;show()}if(!r.ok)throw new Error(j.e||r.status);return j}
+function el(t,p={},...k){const e=Object.assign(document.createElement(t),p);e.append(...k);return e}
+const loc=d=>{if(!d)return'';const x=new Date(d);return new Date(x-x.getTimezoneOffset()*6e4).toISOString().slice(0,16)};
+function draw(){const l=$('#ls');l.replaceChildren();items.forEach((x,i)=>{
+ const on=el('input',{type:'checkbox',checked:x.on,title:'Active',onchange:e=>x.on=e.target.checked});
+ const ty=el('select',{onchange:e=>x.type=e.target.value},...[['event','🎉 Event'],['news','📢 News'],['sale','🔥 Sale']].map(([v,t])=>el('option',{value:v,textContent:t,selected:x.type===v})));
+ const tx=el('input',{type:'text',value:x.text,maxLength:160,placeholder:'Announcement text',oninput:e=>x.text=e.target.value});
+ const del=el('button',{className:'d',textContent:'✕',onclick:()=>{items.splice(i,1);draw()}});
+ const en=el('input',{type:'datetime-local',value:loc(x.end),onchange:e=>x.end=e.target.value?new Date(e.target.value).toISOString():''});
+ l.append(el('div',{className:'r'},on,ty,tx,del,el('div',{className:'e'},'Ends (optional):',en)))})}
+async function load(){try{items=(await api({a:'list'})).items;draw()}catch(e){msg(e.message,1)}}
+$('#go').onclick=async()=>{try{tok=(await api({a:'login',p:$('#pw').value})).t;sessionStorage.setItem('t',tok);$('#pw').value='';msg('');show();load()}catch(e){msg(e.message,1)}};
+$('#pw').onkeydown=e=>e.key==='Enter'&&$('#go').click();
+$('#add').onclick=()=>{if(items.length>=10)return msg('Max 10 items',1);items.push({id:crypto.randomUUID(),type:'event',text:'',end:'',on:true});draw()};
+$('#sv').onclick=async()=>{try{items=(await api({a:'save',items})).items;draw();msg('Saved ✓ (live on the site within ~30s)')}catch(e){msg(e.message,1)}};
+$('#lo').onclick=()=>{sessionStorage.removeItem('t');tok=null;show()};
+show();if(tok)load();

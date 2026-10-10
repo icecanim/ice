@@ -1,0 +1,33 @@
+// ADMIN API: password + secrets live ONLY in Netlify environment variables.
+import {createHmac,timingSafeEqual,randomUUID} from 'node:crypto';
+const E=process.env,B=`https://api.jsonbin.io/v3/b/${E.JSONBIN_BIN_ID}`;
+const out=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{'content-type':'application/json','cache-control':'no-store'}});
+const hits=new Map();
+const hm=(k,v)=>createHmac('sha256',k).update(String(v)).digest();
+const eq=(a,b)=>timingSafeEqual(hm('c',a),hm('c',b));
+const sign=p=>createHmac('sha256',E.ADMIN_SECRET).update(p).digest('base64url');
+const mk=()=>{const p=String(Date.now()+2*36e5);return p+'.'+sign(p)};
+const ok=t=>{const [p,s]=String(t||'').split('.');return !!(p&&s&&Number(p)>Date.now()&&eq(sign(p),s))};
+export default async(req,ctx)=>{
+  if(req.method!=='POST')return out({e:'Method not allowed'},405);
+  if(!E.ADMIN_PASSWORD||!E.ADMIN_SECRET||!E.JSONBIN_KEY||!E.JSONBIN_BIN_ID)return out({e:'Server is not configured'},500);
+  const ip=ctx?.ip||req.headers.get('x-nf-client-connection-ip')||'?';
+  let b;try{if(+req.headers.get('content-length')>20000)throw 0;b=await req.json()}catch{return out({e:'Bad request'},400)}
+  if(b.a==='login'){
+    const h=hits.get(ip)||{n:0,t:Date.now()};if(Date.now()-h.t>9e5){h.n=0;h.t=Date.now()}
+    if(h.n>=5)return out({e:'Too many attempts. Try again in 15 minutes.'},429);
+    await new Promise(r=>setTimeout(r,700));
+    if(eq(b.p,E.ADMIN_PASSWORD)){hits.delete(ip);return out({t:mk()})}
+    h.n++;hits.set(ip,h);return out({e:'Wrong password'},401);
+  }
+  if(!ok((req.headers.get('authorization')||'').replace('Bearer ','')))return out({e:'Unauthorized'},401);
+  const H={'X-Master-Key':E.JSONBIN_KEY,'content-type':'application/json'};
+  if(b.a==='list'){const r=await fetch(B+'/latest',{headers:{...H,'X-Bin-Meta':'false'}});const d=await r.json();return out({items:d.items||[]})}
+  if(b.a==='save'){
+    const T=['event','news','sale'];
+    const items=(Array.isArray(b.items)?b.items:[]).slice(0,10).map(x=>({id:String(x.id||randomUUID()).slice(0,40),type:T.includes(x.type)?x.type:'news',text:String(x.text||'').trim().slice(0,160),end:x.end&&!isNaN(Date.parse(x.end))?new Date(x.end).toISOString():'',on:!!x.on})).filter(x=>x.text);
+    const r=await fetch(B,{method:'PUT',headers:H,body:JSON.stringify({items})});
+    return r.ok?out({ok:1,items}):out({e:'JSONBin error '+r.status},502);
+  }
+  return out({e:'Bad request'},400);
+};
